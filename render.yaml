@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ananya-cloud-ai-orchestration-platform
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: DATABASE_URL
+        value: sqlite:///./data/workflows.db
+      - key: CLOUD_PROVIDER
+        value: aws
+
+  - type: web
+    name: ananya-cloud-orchestration-dashboard
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: streamlit run dashboard/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: API_URL
+        value: https://ananya-cloud-ai-orchestration-platform.onrender.com
