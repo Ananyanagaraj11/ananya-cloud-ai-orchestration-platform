@@ -1,0 +1,4 @@
+project      = "cloud-ai-orch"
+azure_region = "eastus"
+db_username  = "workflow_admin"
+db_password  = "CHANGE_ME_BEFORE_APPLY"

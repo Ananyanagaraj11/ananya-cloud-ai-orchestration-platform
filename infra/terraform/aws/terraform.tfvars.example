@@ -1,0 +1,4 @@
+project        = "cloud-ai-orchestration"
+aws_region     = "us-east-1"
+db_username    = "workflow_admin"
+db_password    = "CHANGE_ME_BEFORE_APPLY"

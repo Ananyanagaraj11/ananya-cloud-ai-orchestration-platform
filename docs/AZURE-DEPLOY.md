@@ -1,41 +1,46 @@
-# Azure Deployment Guide
+# Azure Deployment Runbook
 
-## Target architecture
+## Stack (Terraform)
 
-- **Azure Container Apps** or **AKS** for the FastAPI service
-- **Azure Database for PostgreSQL** for workflow state
-- **Azure Cache for Redis** for job queue
-- **Blob Storage** for export artifacts
-- **Azure Monitor** + Prometheus scrape
+| Resource | File |
+|----------|------|
+| Resource Group | `infra/terraform/azure/main.tf` |
+| Container Registry (ACR) | `infra/terraform/azure/main.tf` |
+| PostgreSQL Flexible Server 16 | `infra/terraform/azure/main.tf` |
+| Azure Cache for Redis | `infra/terraform/azure/main.tf` |
+| Container Apps Environment | `infra/terraform/azure/main.tf` |
+| Container App (API) | `infra/terraform/azure/main.tf` |
+| Blob Storage | `infra/terraform/azure/main.tf` |
+| Log Analytics | `infra/terraform/azure/main.tf` |
 
-## Services mapping
+## Deploy
 
-| Component | Azure service |
-|-----------|---------------|
-| API | Container Apps / AKS |
-| Database | Azure Database for PostgreSQL Flexible Server |
-| Queue | Azure Cache for Redis |
-| Secrets | Azure Key Vault |
-| Logs | Log Analytics |
-| Storage | Blob Storage |
+```bash
+cd infra/terraform/azure
+cp terraform.tfvars.example terraform.tfvars
+az login
 
-## Environment variables (production)
-
-```
-DATABASE_URL=postgresql://user:pass@postgres-server.postgres.database.azure.com/workflows
-REDIS_URL=rediss://redis-cache.redis.cache.windows.net:6380/0
-CLOUD_PROVIDER=azure
-AZURE_REGION=eastus
+terraform init
+terraform plan
+terraform apply
 ```
 
-## Deploy steps (summary)
+## Push container
 
-1. Build and push to **Azure Container Registry**
-2. Deploy Container App or AKS manifest (`infra/kubernetes/`)
-3. Configure PostgreSQL + Redis via Bicep/Terraform in `infra/terraform/azure/`
-4. Wire Key Vault references for secrets
-5. Health probe: `/health`
+```bash
+az acr login --name $ACR_NAME
+docker build -t $ACR_LOGIN_SERVER/api:latest ../../..
+docker push $ACR_LOGIN_SERVER/api:latest
+az containerapp update --name cloud-ai-orch-api --resource-group cloud-ai-orch-rg --image $ACR_LOGIN_SERVER/api:latest
+```
 
-## Parity with AWS
+## Outputs
 
-Same FastAPI image runs on both clouds — only connection strings and identity change.
+- `container_app_url` — public API URL
+- `postgres_fqdn` — DATABASE_URL host
+- `redis_hostname` — REDIS_URL host
+- `storage_account` — Blob exports
+
+## AKS alternative
+
+Deploy `infra/kubernetes/deployment.yaml` to AKS with the same env vars from Terraform outputs.
